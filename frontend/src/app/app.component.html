@@ -1,0 +1,40 @@
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <h2>👋 Hello World App</h2>
+      <p class="subtitle">Angular Frontend + Python FastAPI Backend on AWS EKS</p>
+    </div>
+
+    <div class="card-body">
+      <div class="form-group">
+        <label for="nameInput">Enter Your Name:</label>
+        <div class="input-wrapper">
+          <input
+            id="nameInput"
+            type="text"
+            [(ngModel)]="nameInput"
+            placeholder="e.g. Alice"
+            (keyup.enter)="sendName()"
+            [disabled]="isLoading"
+          />
+          <button (click)="sendName()" [disabled]="isLoading">
+            {{ isLoading ? 'Sending...' : 'Say Hello' }}
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="errorMessage" class="alert alert-error">
+        {{ errorMessage }}
+      </div>
+
+      <div *ngIf="responseMessage" class="alert alert-success">
+        <span class="response-label">Response from Backend:</span>
+        <h3 class="response-text">{{ responseMessage }}</h3>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <small>Microservice architecture deployed via ArgoCD & AWS EKS</small>
+    </div>
+  </div>
+</div>

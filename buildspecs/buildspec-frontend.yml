@@ -1,0 +1,52 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: "us-east-1"
+    IMAGE_REPO_NAME: "hello-frontend"
+    GITOPS_REPO_URL: "github.com/your-org/gitops-manifests.git"
+    MANIFEST_PATH: "helm/hello-app/values.yaml"
+  secrets-manager:
+    GITHUB_TOKEN: "github/pat:token"
+
+phases:
+  install:
+    commands:
+      - echo Installing required dependencies...
+      - apt-get update && apt-get install -y git gettext-base
+
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - ECR_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+      - aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_URI}
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_COMMIT_ID | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:-latest}
+      - echo "Target Image URI: ${ECR_URI}/${IMAGE_REPO_NAME}:${IMAGE_TAG}"
+
+  build:
+    commands:
+      - echo Building Frontend Docker image...
+      - cd app/frontend
+      - docker build -t ${IMAGE_REPO_NAME}:${IMAGE_TAG} .
+      - docker tag ${IMAGE_REPO_NAME}:${IMAGE_TAG} ${ECR_URI}/${IMAGE_REPO_NAME}:${IMAGE_TAG}
+      - docker tag ${IMAGE_REPO_NAME}:${IMAGE_TAG} ${ECR_URI}/${IMAGE_REPO_NAME}:latest
+
+  post_build:
+    commands:
+      - echo Pushing Frontend Docker image to ECR...
+      - docker push ${ECR_URI}/${IMAGE_REPO_NAME}:${IMAGE_TAG}
+      - docker push ${ECR_URI}/${IMAGE_REPO_NAME}:latest
+      - echo Updating GitOps Manifests Repository...
+      - cd $CODEBUILD_SRC_DIR
+      - git config --global user.email "codebuild@aws.com"
+      - git config --global user.name "AWS CodeBuild"
+      - git clone https://${GITHUB_TOKEN}@${GITOPS_REPO_URL} gitops-repo
+      - cd gitops-repo
+      - echo "Updating frontend image tag in ${MANIFEST_PATH} to ${IMAGE_TAG}..."
+      - sed -i "/frontend:/,/tag:/ s|tag: .*|tag: ${IMAGE_TAG}|" ${MANIFEST_PATH}
+      - git add ${MANIFEST_PATH}
+      - git commit -m "ci(frontend): update image tag to ${IMAGE_TAG} [skip ci]" || echo "No changes to commit"
+      - git push origin main
+      - echo Frontend Build and Manifest Update Completed!
