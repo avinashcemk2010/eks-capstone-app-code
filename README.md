@@ -83,6 +83,6 @@ This repository contains the source code for the **Python FastAPI Backend**, **A
   ```
 - **Verification command**:
   ```bash
-  aws codebuild batch-get-builds --ids <BUILD_ID_FROM_PREVIOUS_COMMAND> --query "builds[0].buildStatus" --output text
+  aws codebuild batch-get-builds --ids hello-frontend-build:8a3b2c1d-4e5f-6a7b-8c9d-0e1f2a3b4c5d --query "builds[0].buildStatus" --output text
   ```
   *Expected Output*: `SUCCEEDED`

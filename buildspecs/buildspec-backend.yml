@@ -4,7 +4,7 @@ env:
   variables:
     AWS_DEFAULT_REGION: "us-east-1"
     IMAGE_REPO_NAME: "hello-backend"
-    GITOPS_REPO_URL: "github.com/your-org/gitops-manifests.git"
+    GITOPS_REPO_URL: "github.com/capstone-devops/gitops-manifests.git"
     MANIFEST_PATH: "helm/hello-app/values.yaml"
   secrets-manager:
     GITHUB_TOKEN: "github/pat:token"
